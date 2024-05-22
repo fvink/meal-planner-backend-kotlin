@@ -1,7 +1,9 @@
 package filip.vinkovic.service
 
+import filip.vinkovic.db.dao.MealDao
 import filip.vinkovic.db.dao.MealPlanDao
 import filip.vinkovic.model.AddMealToMealPlanDto
+import filip.vinkovic.model.AddRecipeToMealPlanDto
 import filip.vinkovic.model.CreateMealPlanDto
 import filip.vinkovic.model.MealPlanDto
 import io.ktor.http.*
@@ -11,11 +13,16 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
 fun Application.initializeMealPlanService() {
-    val mealPlanDao = MealPlanDao()
+    val mealPlanDao = MealPlanDao(MealDao())
 
     routing {
         get("/meal-plans") {
-            call.respond(HttpStatusCode.OK, mealPlanDao.readAll())
+            var mealPlans = mealPlanDao.readAll()
+            if (mealPlans.isEmpty()) {
+                mealPlanDao.create(CreateMealPlanDto("Meal Plan 1"))
+                mealPlans = mealPlanDao.readAll()
+            }
+            call.respond(HttpStatusCode.OK, mealPlans)
         }
 
         get("/meal-plans/{id}") {
@@ -35,6 +42,13 @@ fun Application.initializeMealPlanService() {
             val mealPlan = call.receive<CreateMealPlanDto>()
             val id = mealPlanDao.create(mealPlan)
             call.respond(HttpStatusCode.Created, id)
+        }
+
+        put("/meal-plans/{id}/add-recipe") {
+            val id = call.parameters["id"]?.toLong() ?: throw IllegalArgumentException("Invalid ID")
+            val data = call.receive<AddRecipeToMealPlanDto>()
+            mealPlanDao.addRecipe(id, data.day, data.mealTypeId, data.recipeId)
+            call.respond(HttpStatusCode.OK)
         }
 
         put("/meal-plans/{id}/meals") {

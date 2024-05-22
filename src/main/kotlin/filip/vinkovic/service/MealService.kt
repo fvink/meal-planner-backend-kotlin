@@ -1,7 +1,6 @@
 package filip.vinkovic.service
 
 import filip.vinkovic.db.dao.MealDao
-import filip.vinkovic.db.dao.RecipeDao
 import filip.vinkovic.model.CreateMealDto
 import filip.vinkovic.model.MealDto
 import io.ktor.http.*
@@ -12,7 +11,6 @@ import io.ktor.server.routing.*
 
 fun Application.initializeMealService() {
     val mealDao = MealDao()
-    val recipeDao = RecipeDao()
 
     routing {
         get("/meals") {

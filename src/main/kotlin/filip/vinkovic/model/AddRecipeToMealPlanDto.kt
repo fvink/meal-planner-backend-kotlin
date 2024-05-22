@@ -3,8 +3,8 @@ package filip.vinkovic.model
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class AddMealToMealPlanDto(
-    val mealId: Long,
+data class AddRecipeToMealPlanDto(
     val day: Int,
-    val mealTypeId: Long
+    val mealTypeId: Long,
+    val recipeId: Long
 )

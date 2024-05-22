@@ -1,7 +1,9 @@
 package filip.vinkovic.service
 
+import com.zaxxer.hikari.HikariDataSource
 import io.ktor.server.application.*
 import org.jetbrains.exposed.sql.Database
+
 
 fun Application.initializeServices() {
     connectToPostgres()
@@ -9,6 +11,7 @@ fun Application.initializeServices() {
     initializeRecipeService()
     initializeMealService()
     initializeMealPlanService()
+    initializeMealTypeService()
 }
 
 fun connectToPostgres(): Database {
@@ -17,5 +20,10 @@ fun connectToPostgres(): Database {
     val user = System.getenv("DATABASE_USER")
     val password = System.getenv("DATABASE_PASSWORD")
 
-    return Database.connect(url, driver = "org.postgresql.Driver", user = user, password = password)
+    val dataSource = HikariDataSource()
+    dataSource.jdbcUrl = url
+    dataSource.username = user
+    dataSource.password = password
+
+    return Database.connect(dataSource)
 }

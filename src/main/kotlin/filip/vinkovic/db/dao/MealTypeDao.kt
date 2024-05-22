@@ -17,6 +17,7 @@ class MealTypeDao {
     suspend fun create(mealType: CreateMealTypeDto): Long = dbQuery {
         MealTypeEntity.new {
             name = mealType.name
+            index = mealType.index
         }.id.value
     }
 

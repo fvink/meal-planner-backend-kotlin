@@ -6,10 +6,10 @@ import filip.vinkovic.model.MealDto
 import filip.vinkovic.model.MealTypeDto
 import filip.vinkovic.model.RecipeShortDto
 import kotlinx.coroutines.Dispatchers
-import org.jetbrains.exposed.sql.SizedCollection
+import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.dao.load
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 
 class MealDao {
@@ -18,17 +18,18 @@ class MealDao {
         newSuspendedTransaction(Dispatchers.IO) { block() }
 
     suspend fun create(meal: CreateMealDto): Long = dbQuery {
-        MealEntity.new {
-            name = meal.name
-            type = MealTypeEntity.findById(meal.mealTypeId) ?: MealTypeEntity[1] // default to Breakfast
-            recipes = SizedCollection(
-                meal.recipeIds.mapNotNull { id ->
-                    Recipes.selectAll().where { Recipes.id eq id }
-                        .map { RecipeEntity.wrapRow(it) }
-                        .singleOrNull()
-
-                })
+        val mealId = MealEntity.new {
+            name = meal.name ?: ""
+            type = MealTypeEntity.findById(meal.mealTypeId)?.load() ?: MealTypeEntity[1] // default to Breakfast
         }.id.value
+
+        MealRecipes.batchInsert(meal.recipeIds.withIndex()) { recipeId ->
+            this[MealRecipes.meal] = EntityID(mealId, Meals)
+            this[MealRecipes.recipe] = EntityID(recipeId.value, Recipes)
+            this[MealRecipes.index] = recipeId.index
+        }
+
+        mealId
     }
 
     suspend fun readAll(): List<MealDto> {
@@ -37,7 +38,7 @@ class MealDao {
                 MealDto(
                     it.id.value,
                     it.name,
-                    MealTypeDto(it.type.id.value, it.type.name),
+                    MealTypeDto(it.type.id.value, it.type.name, it.type.index),
                     it.recipes.map { recipe ->
                         RecipeShortDto(
                             recipe.id.value,
@@ -57,7 +58,7 @@ class MealDao {
                     MealDto(
                         it.id.value,
                         it.name,
-                        MealTypeDto(it.type.id.value, it.type.name),
+                        MealTypeDto(it.type.id.value, it.type.name, it.type.index),
                         it.recipes.map { recipe ->
                             RecipeShortDto(
                                 recipe.id.value,
@@ -73,7 +74,7 @@ class MealDao {
     suspend fun update(id: Long, meal: CreateMealDto) {
         dbQuery {
             MealEntity.findByIdAndUpdate(id) {
-                it.name = meal.name
+                it.name = meal.name ?: ""
                 it.type = MealTypeEntity.findById(meal.mealTypeId) ?: MealTypeEntity[1] // default to Breakfast
                 it.recipes = SizedCollection(
                     meal.recipeIds.mapNotNull { recipeId ->
@@ -82,6 +83,15 @@ class MealDao {
                             .singleOrNull()
                     }
                 )
+            }
+        }
+    }
+
+    suspend fun addRecipe(id: Long, recipeId: Long) {
+        dbQuery {
+            MealRecipes.insertIgnore {
+                it[meal] = EntityID(id, Meals)
+                it[recipe] = EntityID(recipeId, Recipes)
             }
         }
     }

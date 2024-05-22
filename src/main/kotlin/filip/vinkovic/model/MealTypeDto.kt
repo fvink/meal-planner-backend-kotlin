@@ -5,5 +5,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class MealTypeDto(
     val id: Long,
-    val name: String
+    val name: String,
+    val index: Int
 )

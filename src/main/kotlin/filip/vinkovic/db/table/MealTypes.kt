@@ -7,10 +7,12 @@ import org.jetbrains.exposed.dao.id.LongIdTable
 
 object MealTypes : LongIdTable("meal_types") {
     val name = varchar("name", 255)
+    val index = integer("index")
 }
 
 class MealTypeEntity(id: EntityID<Long>) : LongEntity(id) {
     companion object : LongEntityClass<MealTypeEntity>(MealTypes)
 
     var name by MealTypes.name
+    var index by MealTypes.index
 }

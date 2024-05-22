@@ -4,11 +4,8 @@ import filip.vinkovic.db.table.*
 import filip.vinkovic.model.*
 import kotlinx.coroutines.Dispatchers
 import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import kotlin.collections.List
 import kotlin.collections.component1
@@ -21,7 +18,9 @@ import kotlin.collections.plus
 import kotlin.collections.set
 import kotlin.collections.singleOrNull
 
-class MealPlanDao {
+class MealPlanDao(
+    private val mealDao: MealDao
+) {
 
     suspend fun <T> dbQuery(block: suspend () -> T): T =
         newSuspendedTransaction(Dispatchers.IO) { block() }
@@ -63,7 +62,7 @@ class MealPlanDao {
                                     MealDto(
                                         meal.id.value,
                                         meal.name,
-                                        MealTypeDto(meal.type.id.value, meal.type.name),
+                                        MealTypeDto(meal.type.id.value, meal.type.name, meal.type.index),
                                         meal.recipes.map { recipe ->
                                             RecipeShortDto(
                                                 recipe.id.value,
@@ -79,9 +78,34 @@ class MealPlanDao {
         }
     }
 
+    suspend fun addRecipe(mealPlanId: Long, day: Int, mealTypeId: Long, recipeId: Long) {
+        return dbQuery {
+            var mealId: Long? = MealPlanMeals.selectAll().where {
+                (MealPlanMeals.mealPlan eq mealPlanId) and
+                        (MealPlanMeals.day eq day) and
+                        (MealPlanMeals.mealType eq mealTypeId)
+            }.map {
+                MealEntity.wrap(it[MealPlanMeals.meal], it)
+            }.singleOrNull()?.id?.value
+
+            if (mealId == null) {
+                mealId = mealDao.create(
+                    CreateMealDto(
+                        mealTypeId = mealTypeId,
+                        recipeIds = listOf(recipeId),
+                        name = null
+                    )
+                )
+            } else {
+                mealDao.addRecipe(mealId, recipeId)
+            }
+            addMeal(mealPlanId, day, mealId, mealTypeId)
+        }
+    }
+
     suspend fun addMeal(mealPlanId: Long, day: Int, mealId: Long, mealTypeId: Long) {
         dbQuery {
-            MealPlanMeals.insert {
+            MealPlanMeals.insertIgnore {
                 it[mealPlan] = EntityID(mealPlanId, MealPlans)
                 it[meal] = EntityID(mealId, Meals)
                 it[MealPlanMeals.day] = day
