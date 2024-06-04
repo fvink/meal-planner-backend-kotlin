@@ -96,6 +96,14 @@ class MealDao {
         }
     }
 
+    suspend fun removeRecipe(id: Long, recipeId: Long) {
+        dbQuery {
+            MealRecipes.deleteWhere {
+                (meal eq id) and (recipe eq recipeId)
+            }
+        }
+    }
+
     suspend fun delete(id: Long) {
         dbQuery {
             Meals.deleteWhere { Meals.id.eq(id) }

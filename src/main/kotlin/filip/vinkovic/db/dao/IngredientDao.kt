@@ -4,12 +4,9 @@ import filip.vinkovic.db.table.IngredientEntity
 import filip.vinkovic.db.table.Ingredients
 import filip.vinkovic.model.CreateIngredientDto
 import kotlinx.coroutines.Dispatchers
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import org.jetbrains.exposed.sql.update
 
 class IngredientDao {
 
@@ -39,6 +36,13 @@ class IngredientDao {
             Ingredients.selectAll().where { Ingredients.id eq id }
                 .map { IngredientEntity.wrapRow(it) }
                 .singleOrNull()
+        }
+    }
+
+    suspend fun read(name: String): List<IngredientEntity> {
+        return dbQuery {
+            Ingredients.selectAll().where { Ingredients.name.lowerCase() like "%${name.lowercase()}%" }
+                .map { IngredientEntity.wrapRow(it) }
         }
     }
 

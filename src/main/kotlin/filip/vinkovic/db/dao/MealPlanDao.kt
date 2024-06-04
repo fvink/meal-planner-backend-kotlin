@@ -4,19 +4,15 @@ import filip.vinkovic.db.table.*
 import filip.vinkovic.model.*
 import kotlinx.coroutines.Dispatchers
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.insertIgnore
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import kotlin.collections.List
 import kotlin.collections.component1
 import kotlin.collections.component2
-import kotlin.collections.emptyList
-import kotlin.collections.map
-import kotlin.collections.mapNotNull
-import kotlin.collections.mutableMapOf
-import kotlin.collections.plus
 import kotlin.collections.set
-import kotlin.collections.singleOrNull
 
 class MealPlanDao(
     private val mealDao: MealDao
@@ -100,6 +96,12 @@ class MealPlanDao(
                 mealDao.addRecipe(mealId, recipeId)
             }
             addMeal(mealPlanId, day, mealId, mealTypeId)
+        }
+    }
+
+    suspend fun removeRecipe(mealId: Long, recipeId: Long) {
+        dbQuery {
+            mealDao.removeRecipe(mealId, recipeId)
         }
     }
 

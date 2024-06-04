@@ -4,7 +4,7 @@ fun convertUnit(from: String, to: String): Double {
     if (from == to) {
         return 1.0
     }
-    return unitConversionTable[from]!![to] ?: throw IllegalArgumentException("Invalid units")
+    return unitConversionTable[from]!![to] ?: throw IllegalArgumentException("Invalid units - from: $from, to: $to")
 }
 
 val unitConversionTable = mapOf(

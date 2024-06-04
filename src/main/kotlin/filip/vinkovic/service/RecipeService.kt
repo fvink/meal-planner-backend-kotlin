@@ -36,9 +36,21 @@ fun Application.initializeRecipeService() {
         }
 
         post("/recipes") {
-            val recipe = call.receive<CreateRecipeDto>()
-            val id = recipeDao.create(recipe)
-            call.respond(HttpStatusCode.Created, id)
+            val recipeData = call.receive<CreateRecipeDto>()
+            if (recipeData.name.isBlank() || recipeData.ingredients.any { it.unit.isBlank() }) {
+                call.respond(HttpStatusCode.BadRequest)
+                return@post
+            }
+            try {
+                val id = recipeDao.create(recipeData)
+                val recipe = recipeDao.read(id)
+                when (recipe == null) {
+                    true -> call.respond(HttpStatusCode.InternalServerError)
+                    false -> call.respond<RecipeDto>(HttpStatusCode.OK, recipe)
+                }
+            } catch (e: Exception) {
+                call.respond(HttpStatusCode.InternalServerError)
+            }
         }
 
         put("/recipes/{id}") {

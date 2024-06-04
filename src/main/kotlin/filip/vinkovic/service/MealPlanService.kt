@@ -66,6 +66,13 @@ fun Application.initializeMealPlanService() {
             call.respond(HttpStatusCode.OK)
         }
 
+        delete("/meals/{mealId}/recipes/{recipeId}") {
+            val mealId = call.parameters["mealId"]?.toLong() ?: throw IllegalArgumentException("Invalid meal ID")
+            val recipeId = call.parameters["recipeId"]?.toLong() ?: throw IllegalArgumentException("Invalid meal ID")
+            mealPlanDao.removeRecipe(mealId, recipeId)
+            call.respond(HttpStatusCode.OK)
+        }
+
         delete("/meal-plans/{id}") {
             val id = call.parameters["id"]?.toLong() ?: throw IllegalArgumentException("Invalid ID")
             mealPlanDao.delete(id)

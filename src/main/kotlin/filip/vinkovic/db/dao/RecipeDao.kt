@@ -21,6 +21,7 @@ class RecipeDao {
         val recipeId = RecipeEntity.new {
             name = recipe.name
             steps = recipe.steps
+            servings = recipe.servings
         }.id.value
 
         RecipeIngredients.batchInsert(recipe.ingredients.withIndex()) { ingredient ->

@@ -14,7 +14,13 @@ fun Application.initializeIngredientService() {
 
     routing {
         get("/ingredients") {
-            call.respond(HttpStatusCode.OK, ingredientDao.readAll()
+            val ingredients = if (call.request.queryParameters["name"] != null) {
+                val name = call.request.queryParameters["name"]!!
+                ingredientDao.read(name)
+            } else {
+                ingredientDao.readAll()
+            }
+            call.respond(HttpStatusCode.OK, ingredients
                 .map {
                     IngredientDto(
                         it.id.value,
