@@ -52,6 +52,7 @@ class MealPlanDao(
                         mealPlan.id.value,
                         mealPlan.name,
                         dailyPlans.map { (day, meals) ->
+                            val (calories, protein, carbs, fat) = meals.totalMacros()
                             DailyPlanDto(
                                 day,
                                 meals.map { meal ->
@@ -66,7 +67,8 @@ class MealPlanDao(
                                             )
                                         }
                                     )
-                                }
+                                },
+                                calories, protein, carbs, fat
                             )
                         }
                     )
@@ -131,4 +133,13 @@ class MealPlanDao(
             MealPlans.deleteWhere { MealPlans.id.eq(id) }
         }
     }
+}
+
+private fun List<MealEntity>.totalMacros(): Array<Double> {
+    return arrayOf(
+        sumOf { it.recipes.sumOf { it.ingredients.sumOf { it.calories } } },
+        sumOf { it.recipes.sumOf { it.ingredients.sumOf { it.protein } } },
+        sumOf { it.recipes.sumOf { it.ingredients.sumOf { it.carbs } } },
+        sumOf { it.recipes.sumOf { it.ingredients.sumOf { it.fat } } }
+    )
 }
