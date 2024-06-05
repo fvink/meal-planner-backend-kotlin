@@ -27,6 +27,14 @@ class MealPlanDao(
         }.id.value
     }
 
+    suspend fun update(id: Long, meal: CreateMealPlanDto) {
+        dbQuery {
+            MealPlanEntity[id].apply {
+                name = meal.name
+            }
+        }
+    }
+
     suspend fun readAll(): List<MealPlanDto> {
         return dbQuery {
             MealPlans.select(MealPlans.id)

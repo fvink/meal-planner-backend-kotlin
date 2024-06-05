@@ -44,6 +44,13 @@ fun Application.initializeMealPlanService() {
             call.respond(HttpStatusCode.Created, id)
         }
 
+        put("/meal-plans/{id}") {
+            val id = call.parameters["id"]?.toLong() ?: throw IllegalArgumentException("Invalid ID")
+            val mealPlan = call.receive<CreateMealPlanDto>()
+            mealPlanDao.update(id, mealPlan)
+            call.respond(HttpStatusCode.Created)
+        }
+
         put("/meal-plans/{id}/add-recipe") {
             val id = call.parameters["id"]?.toLong() ?: throw IllegalArgumentException("Invalid ID")
             val data = call.receive<AddRecipeToMealPlanDto>()
