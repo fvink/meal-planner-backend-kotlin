@@ -21,7 +21,7 @@ class MealPlanDao(
     suspend fun <T> dbQuery(block: suspend () -> T): T =
         newSuspendedTransaction(Dispatchers.IO) { block() }
 
-    suspend fun create(meal: CreateMealPlanDto): Long = dbQuery {
+    suspend fun create(meal: CreateMealPlanDto, userId: Long): Long = dbQuery {
         MealPlanEntity.new {
             name = meal.name
         }.id.value
@@ -35,7 +35,7 @@ class MealPlanDao(
         }
     }
 
-    suspend fun readAll(): List<MealPlanDto> {
+    suspend fun readAll(userId: Long): List<MealPlanDto> {
         return dbQuery {
             MealPlans.select(MealPlans.id)
                 .mapNotNull { read(it[MealPlans.id].value) }

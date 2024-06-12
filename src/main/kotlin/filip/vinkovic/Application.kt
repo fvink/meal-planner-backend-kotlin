@@ -3,8 +3,10 @@ package filip.vinkovic
 import filip.vinkovic.plugins.configureRouting
 import filip.vinkovic.plugins.configureSerialization
 import filip.vinkovic.service.initializeServices
+import filip.vinkovic.util.JwtDecoder
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.auth.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.cors.routing.*
@@ -30,6 +32,21 @@ fun Application.module() {
         allowNonSimpleContentTypes = true
         allowCredentials = true
         anyHost()
+    }
+    install(Authentication) {
+        bearer("auth-bearer") {
+            realm = "Access to the '/' path"
+            authenticate { tokenCredential ->
+                val decodedJwt = JwtDecoder.decode(tokenCredential.token)
+                val hasExpired = decodedJwt?.hasExpired() ?: true
+                val email = decodedJwt?.email
+                if (email != null && !hasExpired) {
+                    UserIdPrincipal(email)
+                } else {
+                    null
+                }
+            }
+        }
     }
     configureSerialization()
     initializeServices()

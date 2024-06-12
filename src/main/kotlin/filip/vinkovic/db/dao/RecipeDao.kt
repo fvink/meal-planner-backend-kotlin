@@ -7,9 +7,12 @@ import filip.vinkovic.model.RecipeDto
 import filip.vinkovic.service.toDto
 import kotlinx.coroutines.Dispatchers
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.batchInsert
+import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import org.jetbrains.exposed.sql.update
 import kotlin.collections.set
 
 class RecipeDao {
@@ -17,11 +20,12 @@ class RecipeDao {
     suspend fun <T> dbQuery(block: suspend () -> T): T =
         newSuspendedTransaction(Dispatchers.IO) { block() }
 
-    suspend fun create(recipe: CreateRecipeDto): Long = dbQuery {
+    suspend fun create(recipe: CreateRecipeDto, userId: Long): Long = dbQuery {
         val recipeId = RecipeEntity.new {
             name = recipe.name
             steps = recipe.steps
             servings = recipe.servings
+            user = UserEntity[userId]
         }.id.value
 
         RecipeIngredients.batchInsert(recipe.ingredients.withIndex()) { ingredient ->
@@ -35,11 +39,11 @@ class RecipeDao {
         recipeId
     }
 
-    suspend fun readAll(): List<RecipeDto> {
+    suspend fun readAll(userId: Long): List<RecipeDto> {
         return dbQuery {
             val ingredientAmounts = mutableMapOf<RecipeEntity, List<Pair<IngredientEntity, IngredientAmount>>>()
-
-            RecipeIngredients.selectAll().forEach {
+            val recipes = Recipes.selectAll().where { Recipes.user eq userId }.map { it[Recipes.id] }
+            RecipeIngredients.selectAll().where { RecipeIngredients.recipe.inList(recipes) }.forEach {
                 val amount = it[RecipeIngredients.amount]
                 val unit = it[RecipeIngredients.unit]
                 val recipe = RecipeEntity.wrap(it[RecipeIngredients.recipe], it)

@@ -7,6 +7,7 @@ import org.jetbrains.exposed.sql.Database
 
 fun Application.initializeServices() {
     connectToPostgres()
+    initializeAuthService()
     initializeIngredientService()
     initializeRecipeService()
     initializeMealService()

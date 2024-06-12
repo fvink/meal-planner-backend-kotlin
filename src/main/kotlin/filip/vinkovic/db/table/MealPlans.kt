@@ -7,6 +7,7 @@ import org.jetbrains.exposed.dao.id.LongIdTable
 
 object MealPlans : LongIdTable(name = "meal_plans") {
     val name = varchar("name", 255)
+    val user = reference("user_id", Users)
 }
 
 class MealPlanEntity(id: EntityID<Long>) : LongEntity(id) {
@@ -14,4 +15,5 @@ class MealPlanEntity(id: EntityID<Long>) : LongEntity(id) {
 
     var name by MealPlans.name
     var meals by MealEntity via MealPlanMeals
+    var user by UserEntity referencedOn MealPlans.user
 }
