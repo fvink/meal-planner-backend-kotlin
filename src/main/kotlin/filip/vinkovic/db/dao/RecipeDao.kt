@@ -92,7 +92,7 @@ class RecipeDao {
 
     suspend fun delete(id: Long) {
         dbQuery {
-            Ingredients.deleteWhere { Ingredients.id.eq(id) }
+            Recipes.deleteWhere { Recipes.id.eq(id) }
         }
     }
 }
