@@ -24,6 +24,7 @@ class MealPlanDao(
     suspend fun create(meal: CreateMealPlanDto, userId: Long): Long = dbQuery {
         MealPlanEntity.new {
             name = meal.name
+            user = UserEntity[userId]
         }.id.value
     }
 
@@ -38,6 +39,7 @@ class MealPlanDao(
     suspend fun readAll(userId: Long): List<MealPlanDto> {
         return dbQuery {
             MealPlans.select(MealPlans.id)
+                .where { MealPlans.user eq userId }
                 .mapNotNull { read(it[MealPlans.id].value) }
         }
     }

@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 data class IngredientDto(
     val id: Long,
     val name: String,
+    val description: String?,
     val calories: Double,
     val protein: Double,
     val carbs: Double,

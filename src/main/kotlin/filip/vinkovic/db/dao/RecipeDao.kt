@@ -7,12 +7,9 @@ import filip.vinkovic.model.RecipeDto
 import filip.vinkovic.service.toDto
 import kotlinx.coroutines.Dispatchers
 import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.batchInsert
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import org.jetbrains.exposed.sql.update
 import kotlin.collections.set
 
 class RecipeDao {
@@ -39,10 +36,15 @@ class RecipeDao {
         recipeId
     }
 
-    suspend fun readAll(userId: Long): List<RecipeDto> {
+    suspend fun readAll(userId: Long, query: String? = null): List<RecipeDto> {
         return dbQuery {
             val ingredientAmounts = mutableMapOf<RecipeEntity, List<Pair<IngredientEntity, IngredientAmount>>>()
-            val recipes = Recipes.selectAll().where { Recipes.user eq userId }.map { it[Recipes.id] }
+            val recipes = Recipes.selectAll()
+                .where {
+                    Recipes.user eq userId and
+                            (if (query != null) Recipes.name.lowerCase() like "%${query.lowercase()}%" else Op.TRUE)
+                }
+                .map { it[Recipes.id] }
             RecipeIngredients.selectAll().where { RecipeIngredients.recipe.inList(recipes) }.forEach {
                 val amount = it[RecipeIngredients.amount]
                 val unit = it[RecipeIngredients.unit]
@@ -82,10 +84,20 @@ class RecipeDao {
 
     suspend fun update(id: Long, recipe: CreateRecipeDto) {
         dbQuery {
-            // TODO Update ingredients
+            RecipeIngredients.deleteWhere {
+                RecipeIngredients.recipe eq id
+            }
+            RecipeIngredients.batchInsert(recipe.ingredients.withIndex()) { ingredient ->
+                this[RecipeIngredients.recipe] = EntityID(id, Recipes)
+                this[RecipeIngredients.ingredient] = EntityID(ingredient.value.id, Ingredients)
+                this[RecipeIngredients.amount] = ingredient.value.amount
+                this[RecipeIngredients.unit] = ingredient.value.unit
+                this[RecipeIngredients.index] = ingredient.index
+            }
             Recipes.update({ Recipes.id eq id }) { row ->
                 row[name] = recipe.name
                 row[steps] = recipe.steps
+                row[servings] = recipe.servings
             }
         }
     }

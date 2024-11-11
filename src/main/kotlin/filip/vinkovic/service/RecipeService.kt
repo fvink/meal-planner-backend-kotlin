@@ -6,9 +6,7 @@ import filip.vinkovic.db.table.IngredientEntity
 import filip.vinkovic.db.table.RecipeEntity
 import filip.vinkovic.model.CreateRecipeDto
 import filip.vinkovic.model.IngredientAmount
-import filip.vinkovic.model.IngredientDto
 import filip.vinkovic.model.RecipeDto
-import filip.vinkovic.util.convertUnit
 import filip.vinkovic.util.getUserIdForPrincipal
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -29,6 +27,7 @@ fun Application.initializeRecipeService() {
                     call.respond(HttpStatusCode.Unauthorized)
                     return@get
                 }
+                recipeDao.readAll(userId, call.request.queryParameters["query"])
                 call.respond(HttpStatusCode.OK, recipeDao.readAll(userId))
             }
 
@@ -70,9 +69,13 @@ fun Application.initializeRecipeService() {
 
             put("/recipes/{id}") {
                 val id = call.parameters["id"]?.toLong() ?: throw IllegalArgumentException("Invalid ID")
-                val recipe = call.receive<CreateRecipeDto>()
-                recipeDao.update(id, recipe)
-                call.respond(HttpStatusCode.OK)
+                val recipeData = call.receive<CreateRecipeDto>()
+                recipeDao.update(id, recipeData)
+                val recipe = recipeDao.read(id)
+                when (recipe == null) {
+                    true -> call.respond(HttpStatusCode.InternalServerError)
+                    false -> call.respond<RecipeDto>(HttpStatusCode.OK, recipe)
+                }
             }
 
             delete("/recipes/{id}") {
@@ -101,20 +104,5 @@ fun RecipeEntity.toDto(ingredients: List<Pair<IngredientEntity, IngredientAmount
         this.steps,
         this.servings,
         scaledIngredients
-    )
-}
-
-fun IngredientEntity.toDtoScaled(amount: IngredientAmount): IngredientDto {
-    val unitScale = convertUnit(this.unit, amount.unit)
-    val amountScale = amount.amount / (this.amount * unitScale)
-    return IngredientDto(
-        this.id.value,
-        this.name,
-        this.calories * amountScale,
-        this.protein * amountScale,
-        this.carbs * amountScale,
-        this.fat * amountScale,
-        amount.amount,
-        amount.unit
     )
 }

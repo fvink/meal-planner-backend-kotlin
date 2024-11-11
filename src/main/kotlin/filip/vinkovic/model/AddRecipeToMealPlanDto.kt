@@ -4,7 +4,12 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class AddRecipeToMealPlanDto(
-    val day: Int,
-    val mealTypeId: Long,
+    val dayAndMealTypes: List<DayAndMealTypes>,
     val recipeId: Long
+)
+
+@Serializable
+data class DayAndMealTypes(
+    val day: Int,
+    val mealTypeIds: List<Long>
 )

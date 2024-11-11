@@ -16,6 +16,7 @@ fun Application.configureSerialization() {
             prettyPrint = true
             isLenient = true
             encodeDefaults = false
+            ignoreUnknownKeys = true
             serializersModule = SerializersModule {
                 contextual(HttpStatusCode::class) { HttpStatusCodeSerializer }
             }

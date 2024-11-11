@@ -11,8 +11,8 @@ object Ingredients : LongIdTable() {
     val protein = double("protein")
     val carbs = double("carbs")
     val fat = double("fat")
-    val amount = double("amount")
-    val unit = varchar("unit", 255)
+    val weight_g = double("weight_g")
+    val volume_ml = double("volume_ml")
 }
 
 class IngredientEntity(id: EntityID<Long>) : LongEntity(id) {
@@ -23,6 +23,6 @@ class IngredientEntity(id: EntityID<Long>) : LongEntity(id) {
     var protein by Ingredients.protein
     var carbs by Ingredients.carbs
     var fat by Ingredients.fat
-    var amount by Ingredients.amount
-    var unit by Ingredients.unit
+    var weight_g by Ingredients.weight_g
+    var volume_ml by Ingredients.volume_ml
 }

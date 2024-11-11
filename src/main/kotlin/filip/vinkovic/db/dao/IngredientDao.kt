@@ -6,6 +6,7 @@ import filip.vinkovic.model.CreateIngredientDto
 import kotlinx.coroutines.Dispatchers
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 
 class IngredientDao {
@@ -20,8 +21,10 @@ class IngredientDao {
             ingredient.protein?.let { row[protein] = it }
             ingredient.carbs?.let { row[carbs] = it }
             ingredient.fat?.let { row[fat] = it }
-            ingredient.amount?.let { row[amount] = it }
-            ingredient.unit?.let { row[unit] = it }
+            if (ingredient.amount != null && ingredient.unit != null) {
+                row[weight_g] = ingredient.amount
+                // TODO: Convert DTO unit to grams, add support for volume_ml
+            }
         }.value
     }
 
@@ -41,7 +44,16 @@ class IngredientDao {
 
     suspend fun read(name: String): List<IngredientEntity> {
         return dbQuery {
-            Ingredients.selectAll().where { Ingredients.name.lowerCase() like "%${name.lowercase()}%" }
+            Ingredients.selectAll()
+                .where { Ingredients.name.lowerCase() like "%${name.lowercase()}%" }
+                .orderBy(
+                    Case()
+                        .When(Ingredients.name.lowerCase() eq name.lowercase(), intLiteral(1))
+                        .When(Ingredients.name.lowerCase() like "${name.lowercase()}%", intLiteral(2))
+                        .Else(intLiteral(3)) to SortOrder.ASC,
+                    Ingredients.name to SortOrder.ASC
+                )
+                .limit(30)
                 .map { IngredientEntity.wrapRow(it) }
         }
     }
@@ -54,8 +66,10 @@ class IngredientDao {
                 ingredient.protein?.let { row[protein] = it }
                 ingredient.carbs?.let { row[carbs] = it }
                 ingredient.fat?.let { row[fat] = it }
-                ingredient.amount?.let { row[amount] = it }
-                ingredient.unit?.let { row[unit] = it }
+                if (ingredient.amount != null && ingredient.unit != null) {
+                    row[weight_g] = ingredient.amount
+                    // TODO: Convert DTO unit to grams, add support for volume_ml
+                }
             }
         }
     }

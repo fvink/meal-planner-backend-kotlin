@@ -69,7 +69,11 @@ fun Application.initializeMealPlanService() {
             put("/meal-plans/{id}/add-recipe") {
                 val id = call.parameters["id"]?.toLong() ?: throw IllegalArgumentException("Invalid ID")
                 val data = call.receive<AddRecipeToMealPlanDto>()
-                mealPlanDao.addRecipe(id, data.day, data.mealTypeId, data.recipeId)
+                data.dayAndMealTypes.forEach { dayAndMealType ->
+                    dayAndMealType.mealTypeIds.forEach { mealTypeId ->
+                        mealPlanDao.addRecipe(id, dayAndMealType.day, mealTypeId, data.recipeId)
+                    }
+                }
                 call.respond(HttpStatusCode.OK)
             }
 
