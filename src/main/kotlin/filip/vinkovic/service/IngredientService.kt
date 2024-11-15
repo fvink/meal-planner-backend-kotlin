@@ -2,20 +2,33 @@ package filip.vinkovic.service
 
 import filip.vinkovic.db.dao.IngredientDao
 import filip.vinkovic.db.table.IngredientEntity
+import filip.vinkovic.fatsecret.FatSecretService
+import filip.vinkovic.fatsecret.FatSecretTokenManager
 import filip.vinkovic.model.CreateIngredientDto
-import filip.vinkovic.model.IngredientAmount
 import filip.vinkovic.model.IngredientDto
-import filip.vinkovic.util.convertUnit
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import org.koin.ktor.ext.inject
 
 fun Application.initializeIngredientService() {
     val ingredientDao = IngredientDao()
+    val fatSecretService by inject<FatSecretService>()
+    val fatSecretTokenManager by inject<FatSecretTokenManager>()
 
     routing {
+        get("/fatsecret-token") {
+            call.respond(HttpStatusCode.OK, fatSecretTokenManager.getAccessToken() ?: "null")
+        }
+
+        get("/ingredients/search") {
+            val query =
+                call.request.queryParameters["query"] ?: throw IllegalArgumentException("Query parameter is required")
+            call.respond(HttpStatusCode.OK, fatSecretService.foodSearch(query))
+        }
+
         get("/ingredients") {
             val ingredients = if (call.request.queryParameters["name"] != null) {
                 val name = call.request.queryParameters["name"]!!
@@ -66,30 +79,8 @@ fun IngredientEntity.toDto(): IngredientDto {
         this.id.value,
         name,
         description,
-        this.calories,
-        this.protein,
-        this.carbs,
-        this.fat,
-        this.weight_g,
-        "g"
-    )
-}
-
-// TODO: Implement support for volume_ml
-fun IngredientEntity.toDtoScaled(amount: IngredientAmount): IngredientDto {
-    val unitScale = convertUnit("g", amount.unit)
-    val amountScale = amount.amount / (this.weight_g * unitScale)
-    val (name, description) = this.name.splitIntoNameAndDescription()
-    return IngredientDto(
-        this.id.value,
-        name,
-        description,
-        this.calories * amountScale,
-        this.protein * amountScale,
-        this.carbs * amountScale,
-        this.fat * amountScale,
-        amount.amount,
-        amount.unit
+        source = "db",
+        servings = emptyList()
     )
 }
 

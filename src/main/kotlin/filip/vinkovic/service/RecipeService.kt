@@ -2,10 +2,11 @@ package filip.vinkovic.service
 
 import filip.vinkovic.db.dao.RecipeDao
 import filip.vinkovic.db.dao.UserDao
-import filip.vinkovic.db.table.IngredientEntity
-import filip.vinkovic.db.table.RecipeEntity
+import filip.vinkovic.db.model.RecipeWithIngredientServings
+import filip.vinkovic.fatsecret.FatSecretService
 import filip.vinkovic.model.CreateRecipeDto
-import filip.vinkovic.model.IngredientAmount
+import filip.vinkovic.model.IngredientDto
+import filip.vinkovic.model.IngredientWithAmountDto
 import filip.vinkovic.model.RecipeDto
 import filip.vinkovic.util.getUserIdForPrincipal
 import io.ktor.http.*
@@ -14,10 +15,12 @@ import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import org.koin.ktor.ext.inject
 
 fun Application.initializeRecipeService() {
     val recipeDao = RecipeDao()
     val userDao = UserDao()
+    val fatSecretService by inject<FatSecretService>()
 
     routing {
         authenticate("auth-bearer") {
@@ -27,8 +30,11 @@ fun Application.initializeRecipeService() {
                     call.respond(HttpStatusCode.Unauthorized)
                     return@get
                 }
-                recipeDao.readAll(userId, call.request.queryParameters["query"])
-                call.respond(HttpStatusCode.OK, recipeDao.readAll(userId))
+                val recipes = recipeDao.readAll(userId, call.request.queryParameters["query"])
+                call.respond(
+                    HttpStatusCode.OK,
+                    recipes.map { it.toRecipeDto(fatSecretService, loadIngredients = false) }
+                )
             }
 
             get("/recipes/{id}") {
@@ -37,7 +43,7 @@ fun Application.initializeRecipeService() {
                     val recipe = recipeDao.read(id)
                     when (recipe == null) {
                         true -> call.respond(HttpStatusCode.NotFound)
-                        false -> call.respond<RecipeDto>(HttpStatusCode.OK, recipe)
+                        false -> call.respond<RecipeDto>(HttpStatusCode.OK, recipe.toRecipeDto(fatSecretService))
                     }
                 } catch (e: Exception) {
                     call.respond(HttpStatusCode.NotFound)
@@ -60,7 +66,7 @@ fun Application.initializeRecipeService() {
                     val recipe = recipeDao.read(id)
                     when (recipe == null) {
                         true -> call.respond(HttpStatusCode.InternalServerError)
-                        false -> call.respond<RecipeDto>(HttpStatusCode.OK, recipe)
+                        false -> call.respond<RecipeDto>(HttpStatusCode.OK, recipe.toRecipeDto(fatSecretService))
                     }
                 } catch (e: Exception) {
                     call.respond(HttpStatusCode.InternalServerError)
@@ -74,7 +80,7 @@ fun Application.initializeRecipeService() {
                 val recipe = recipeDao.read(id)
                 when (recipe == null) {
                     true -> call.respond(HttpStatusCode.InternalServerError)
-                    false -> call.respond<RecipeDto>(HttpStatusCode.OK, recipe)
+                    false -> call.respond<RecipeDto>(HttpStatusCode.OK, recipe.toRecipeDto(fatSecretService))
                 }
             }
 
@@ -87,22 +93,34 @@ fun Application.initializeRecipeService() {
     }
 }
 
-fun RecipeEntity.toDto(ingredients: List<Pair<IngredientEntity, IngredientAmount>>): RecipeDto {
-    val scaledIngredients = ingredients.map { (ingredient, amount) -> ingredient.toDtoScaled(amount) }
-    val totalCalories = scaledIngredients.sumOf { ingredient -> ingredient.calories }
-    val totalProtein = scaledIngredients.sumOf { ingredient -> ingredient.protein }
-    val totalCarbs = scaledIngredients.sumOf { ingredient -> ingredient.carbs }
-    val totalFat = scaledIngredients.sumOf { ingredient -> ingredient.fat }
-
+suspend fun RecipeWithIngredientServings.toRecipeDto(
+    fatSecretService: FatSecretService,
+    loadIngredients: Boolean = true
+): RecipeDto {
+    val fsIngredientIds = ingredientServings.filter { it.ingredientSource == "fs" }.map { it.id }
+    val ingredients = if (loadIngredients) fsIngredientIds.map { fatSecretService.getFoodById(it) } else emptyList()
+    val ingredientAmounts = ingredientServings.map { serving ->
+        IngredientWithAmountDto(
+            ingredient = ingredients.find { it?.id == serving.id }
+                ?: unknownIngredient, // TODO: handle unknown ingredient
+            amount = serving.amount,
+            unit = serving.unit,
+            index = serving.index,
+            fsServingId = serving.fsServingId,
+            ingredientSource = serving.ingredientSource,
+        )
+    }
     return RecipeDto(
-        this.id.value,
-        this.name,
-        totalCalories / this.servings,
-        totalProtein / this.servings,
-        totalCarbs / this.servings,
-        totalFat / this.servings,
-        this.steps,
-        this.servings,
-        scaledIngredients
+        id,
+        name,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        steps,
+        servings,
+        ingredientAmounts
     )
 }
+
+val unknownIngredient = IngredientDto(0, "Unknown", "Unknown", "Unknown", emptyList())

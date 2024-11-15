@@ -1,5 +1,6 @@
 package filip.vinkovic
 
+import filip.vinkovic.di.appModule
 import filip.vinkovic.plugins.configureRouting
 import filip.vinkovic.plugins.configureSerialization
 import filip.vinkovic.service.initializeServices
@@ -10,6 +11,7 @@ import io.ktor.server.auth.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.cors.routing.*
+import org.koin.ktor.plugin.Koin
 
 fun main(args: Array<String>) {
     embeddedServer(
@@ -21,6 +23,10 @@ fun main(args: Array<String>) {
 }
 
 fun Application.module() {
+    install(Koin) {
+        modules(appModule)
+    }
+
     install(CORS) {
         allowMethod(HttpMethod.Get)
         allowMethod(HttpMethod.Put)

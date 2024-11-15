@@ -146,10 +146,12 @@ class MealPlanDao(
 }
 
 private fun List<MealEntity>.totalMacros(): Array<Double> {
+    // TODO: Implement this
     return arrayOf(
-        sumOf { it.recipes.sumOf { it.ingredients.sumOf { it.calories } } },
-        sumOf { it.recipes.sumOf { it.ingredients.sumOf { it.protein } } },
-        sumOf { it.recipes.sumOf { it.ingredients.sumOf { it.carbs } } },
-        sumOf { it.recipes.sumOf { it.ingredients.sumOf { it.fat } } }
+        0.0, 0.0, 0.0, 0.0
+//        sumOf { it.recipes.sumOf { it.ingredients.sumOf { it.calories } } },
+//        sumOf { it.recipes.sumOf { it.ingredients.sumOf { it.protein } } },
+//        sumOf { it.recipes.sumOf { it.ingredients.sumOf { it.carbs } } },
+//        sumOf { it.recipes.sumOf { it.ingredients.sumOf { it.fat } } }
     )
 }

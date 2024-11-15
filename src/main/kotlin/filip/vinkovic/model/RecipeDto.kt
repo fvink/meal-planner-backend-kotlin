@@ -12,7 +12,7 @@ data class RecipeDto(
     val fatPerServing: Double,
     val steps: String,
     val servings: Int,
-    val ingredients: List<IngredientDto>
+    val ingredients: List<IngredientWithAmountDto>
 )
 
 fun RecipeDto.toRecipeShortDto() = RecipeShortDto(id, name)

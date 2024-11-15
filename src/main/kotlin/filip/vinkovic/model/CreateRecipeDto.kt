@@ -12,7 +12,8 @@ data class CreateRecipeDto(
 
 @Serializable
 data class CreateRecipeIngredientDto(
-    val id: Long,
+    val ingredient: IngredientDto,
+    val fsServingId: Long? = null,
     val amount: Double,
     val unit: String
 )

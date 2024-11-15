@@ -18,6 +18,6 @@ class RecipeEntity(id: EntityID<Long>) : LongEntity(id) {
     var name by Recipes.name
     var steps by Recipes.steps
     var servings by Recipes.servings
-    var ingredients by IngredientEntity via RecipeIngredients
+//    var ingredients by IngredientEntity via RecipeIngredients
     var user by UserEntity referencedOn Recipes.user
 }

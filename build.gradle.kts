@@ -2,6 +2,7 @@
 val ktor_version: String by project
 val kotlin_version: String by project
 val logback_version: String by project
+val koin_version: String by project
 
 plugins {
     kotlin("jvm") version "2.0.21"
@@ -36,8 +37,17 @@ dependencies {
     implementation("io.ktor:ktor-server-cors-jvm")
     implementation("io.ktor:ktor-server-auth-jvm")
     implementation("io.ktor:ktor-server-netty-jvm")
-    implementation("io.ktor:ktor-server-call-logging:$ktor_version")
+    implementation("io.ktor:ktor-server-call-logging-jvm")
     implementation("io.ktor:ktor-server-config-yaml:3.0.0")
+
+    implementation("io.ktor:ktor-client-core-jvm")
+    implementation("io.ktor:ktor-client-cio-jvm")
+    implementation("io.ktor:ktor-client-content-negotiation-jvm")
+    implementation("io.ktor:ktor-client-auth-jvm")
+    implementation("io.ktor:ktor-client-logging-jvm")
+
+    implementation("io.insert-koin:koin-ktor:$koin_version")
+    implementation("io.insert-koin:koin-logger-slf4j:$koin_version")
     implementation("org.postgresql:postgresql:42.5.1")
     implementation("com.h2database:h2:2.1.214")
     implementation("org.jetbrains.exposed:exposed-core:0.50.1")
